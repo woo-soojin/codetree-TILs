@@ -66,11 +66,14 @@ void move() {
         }
 
         // move tail
-        int teamSize = team.size();
-        int tailX = team[teamSize - 1].first;
-        int tailY = team[teamSize - 1].second;
-        grid[tailX][tailY] = 4;
-        team.pop_back();
+        if(!team.empty()) {
+            int teamSize = team.size();
+            int tailX = team[teamSize - 1].first;
+            int tailY = team[teamSize - 1].second;
+            grid[tailX][tailY] = 4;
+            team.pop_back();
+        }
+        
     }
 }
 
@@ -141,5 +144,4 @@ int main() {
     }
     
     std::cout << score;
-    return 0;
 }
