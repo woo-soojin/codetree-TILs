@@ -48,6 +48,7 @@ void teaming(int x, int y, int teamNum) {
 
 void move() {
     for (auto &team : teams) {
+        if(team.empty()) continue;
         int headX = team[0].first;
         int headY = team[0].second;
         int currTeam = grid[headX][headY];
@@ -66,14 +67,11 @@ void move() {
         }
 
         // move tail
-        if(!team.empty()) {
-            int teamSize = team.size();
-            int tailX = team[teamSize - 1].first;
-            int tailY = team[teamSize - 1].second;
-            grid[tailX][tailY] = 4;
-            team.pop_back();
-        }
-        
+        int teamSize = team.size();
+        int tailX = team[teamSize - 1].first;
+        int tailY = team[teamSize - 1].second;
+        grid[tailX][tailY] = 4;
+        team.pop_back();
     }
 }
 
@@ -99,7 +97,6 @@ void throwBall(int round) {
         sy = n - 1 - (round % n);
     }
     
-    int idx;
     for (int i = 0; i < n; i++) {
         if (sx < 0 || sy < 0 || sx >= n || sy >= n)
             continue;
@@ -108,8 +105,9 @@ void throwBall(int round) {
             int teamIdx = teamNum - 5;
             std::vector<std::pair<int, int>> currVec = teams[teamIdx];
             auto iterator = std::find(currVec.begin(), currVec.end(), std::make_pair(sx,sy));
-            idx = distance(currVec.begin(), iterator);
-            score += (idx + 1) * (idx + 1);
+            if (iterator == currVec.end()) continue;
+            int idx = distance(currVec.begin(), iterator);
+            score += ((idx + 1) * (idx + 1));
 
             reverse(teams[teamIdx].begin(), teams[teamIdx].end()); // reverse
             break;
@@ -129,16 +127,17 @@ int main() {
         }
     }
 
-    for(int i=0; i<k; i++){
-        int teamNum = 5;
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                if (!visited[i][j] && grid[i][j] == 1) { // if head
-                    teaming(i, j, teamNum);
-                }
+    int teamNum = 5;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (!visited[i][j] && grid[i][j] == 1) { // if head
+                teaming(i, j, teamNum);
             }
-            teamNum++;
         }
+        teamNum++;
+    }
+    for(int i=0; i<k; i++){
+        
         move();
         throwBall(i);
     }
