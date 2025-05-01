@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+
 using namespace std;
 
 int grid[100][100];
@@ -21,7 +22,6 @@ int ry[4] = { 0,1,0,-1 };
 
 int N, M, H, K;
 int sx, sy; // TODO
-int cDir = 0;
 int ans = 0;
 
 vector<Runner> runners;
@@ -46,7 +46,7 @@ void moveRunner() {
 
 		if (nx < 0 || ny < 0 || nx >= N || ny >= N) {
 			cDir = (cDir + 2) % 4;
-			runner.dir = cDir;
+			runner.dir = cDir; // TODO
 
 			nx = cx + dx[cDir];
 			ny = cy + dy[cDir];
@@ -71,59 +71,39 @@ void moveRunner() {
 
 int catchRunner(bool isClockWise, int dir) {
 	int catched = 0;
-	int cx = sx;
-	int cy = sy;
-
-	if (isClockWise) {
-		for (int d = 1; d <= 3; d++) {
-			int nx = cx + dx[dir] * d;
-			int ny = cy + dy[dir] * d;
-
-			if (nx < 0 || ny < 0 || nx >= N || ny >= N)
-				continue;
-
-			for (pair<int, int> tree : trees) {
-				int tx = tree.first;
-				int ty = tree.second;
-
-				if (nx == tx && ny == ty)
-					continue;
-
-				for (Runner& runner : runners) {
-					if (runner.isDisappear)
-						continue;
-
-					if (nx == runner.x && ny == runner.y) {
-						catched++;
-						runner.isDisappear = true;
-					}
-				}
-			}
+	int nx, ny;
+	for (int d = 0; d < 3; d++) {
+		if (isClockWise) {
+			nx = sx + dx[dir] * d;
+			ny = sy + dy[dir] * d;
 		}
-	}
-	else {
-		for (int d = 1; d <= 3; d++) {
-			int nx = cx + rx[dir] * d;
-			int ny = cy + ry[dir] * d;
+		else {
+			nx = sx + rx[dir] * d;
+			ny = sy + ry[dir] * d;
+		}
 
-			if (nx < 0 || ny < 0 || nx >= N || ny >= N)
+		if (nx < 0 || ny < 0 || nx >= N || ny >= N)
+			continue;
+
+		for (Runner& runner : runners) {
+			if (runner.isDisappear)
 				continue;
 
-			for (pair<int, int> tree : trees) {
-				int tx = tree.first;
-				int ty = tree.second;
+			if (nx == runner.x && ny == runner.y) {
+				bool isTree = false;
+				for (pair<int, int> tree : trees) {
+					int tx = tree.first;
+					int ty = tree.second;
 
-				if (nx == tx && ny == ty)
-					continue;
+					if (nx == tx && ny == ty) {
+						isTree = true;
+						break;
+					}	
+				}
 
-				for (Runner& runner : runners) {
-					if (runner.isDisappear)
-						continue;
-
-					if (nx == runner.x && ny == runner.y) {
-						catched++;
-						runner.isDisappear = true;
-					}
+				if (!isTree) {
+					catched++;
+					runner.isDisappear = true;
 				}
 			}
 		}
@@ -132,67 +112,65 @@ int catchRunner(bool isClockWise, int dir) {
 	return catched;
 }
 
-void moveSeeker(bool& isClockWise, int& dist, int& dir, bool& flag) {
-	int nx, ny;
-	if (sx == N / 2 && sy == N / 2) {
-		isClockWise = true;
-		dir = 0;
-		dist = 1;
+void moveSeeker(bool& isClockWise, int& currDist, int& maxDist, int& dir, bool& flag) {
+	currDist++;
+
+	if (isClockWise) {
+		sx = sx + dx[dir];
+		sy = sy + dy[dir];
+	}
+	else {
+		sx = sx + rx[dir];
+		sy = sy + ry[dir];
 	}
 
 	if (sx == 0 && sy == 0) {
 		isClockWise = false;
-		dir = 1;
-		dist = 4;
-		sx = N - 1;
-		sy = 0;
-		return;
-	}
-
-	if (dist == N) {
-		sx = 0;
-		sy = 0;
-		dir = 2; // TODO
-		return;
-	}
-
-	// 두번반복
-	if (isClockWise) {
-		nx = sx + dx[dir] * dist;
-		ny = sy + dy[dir] * dist;
-	}
-	else {
-		nx = sx + rx[dir] * dist;
-		ny = sy + ry[dir] * dist;
-	}
-
-	sx = nx;
-	sy = ny;
-
-	dir = (dir + 1) % 4;
-
-	if (flag == false)
+		dir = 0;
+		maxDist = N;
+		currDist = 1;
 		flag = true;
-	else {
-		if (isClockWise)
-			dist++;
-		else
-			dist--;
+	}
+	else if (sx == N / 2 && sy == N / 2) {
+		isClockWise = true;
+		dir = 0;
+		maxDist = 1;
+		currDist = 0;
 		flag = false;
+	}
+
+	if (currDist == maxDist) {
+		currDist = 0;
+
+		if (flag) {
+			if (isClockWise)
+				maxDist++;
+			else
+				maxDist--;
+
+			flag = false;
+		}	
+		else
+			flag = true;
+
+		dir = (dir + 1) % 4;
 	}
 }
 
 void run() {
 	//int nx, ny;
-	int dist = 1;
-	int dir = 0;
 	bool isClockWise = true;
+	int currDist = 0;
+	int maxDist = 1;
+	int dir = 0;
 	bool flag = false;
 
 	for (int k = 1; k <= K; k++) {
-		moveRunner();
+		if (runners.size() == 0)
+			break;
 
-		moveSeeker(isClockWise, dist, dir, flag);
+		moveRunner();
+		moveSeeker(isClockWise, currDist, maxDist, dir, flag);
 
 		int catched = catchRunner(isClockWise, dir);
 		ans += catched * k;
@@ -205,7 +183,6 @@ int main() {
 	// init
 	sx = N / 2;
 	sy = N / 2;
-	grid[sx][sy] = 1;
 
 	Runner runner;
 	for (int m = 1; m <= M; m++) {
